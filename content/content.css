@@ -1,0 +1,436 @@
+/* ==========================================================================
+   Call Notes — injected panel (event bubble) + grid badges.
+
+   The panel inherits Google Calendar's type and surface so it reads native,
+   then threads one identity through everything: the category color runs
+   from the grid dot → the panel spine → the selected stamp. Ledger
+   details (mono eyebrow + timestamps, brass accent) mark it as yours.
+   ========================================================================== */
+
+.cn-panel {
+  --cn-accent: #8a6d3b;
+  --cn-text: #3c4043;
+  --cn-strong: #1f2126;
+  --cn-dim: #70757a;
+  --cn-line: rgba(32, 33, 36, 0.12);
+  --cn-field: rgba(32, 33, 36, 0.04);
+  --cn-hover: rgba(32, 33, 36, 0.06);
+  --cn-cat: transparent;
+
+  position: relative;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 14px 16px 16px 20px;
+  border-top: 1px solid var(--cn-line);
+  font-family: 'Google Sans Text', 'Google Sans', Roboto, 'Helvetica Neue', sans-serif;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--cn-text);
+  text-align: left;
+  cursor: default;
+  animation: cn-in 0.18s ease-out;
+}
+
+.cn-panel.cn-dark {
+  --cn-accent: #d5b87e;
+  --cn-text: #e2e4e9;
+  --cn-strong: #f3f4f6;
+  --cn-dim: #9aa0ae;
+  --cn-line: rgba(232, 234, 237, 0.14);
+  --cn-field: rgba(232, 234, 237, 0.07);
+  --cn-hover: rgba(232, 234, 237, 0.1);
+}
+
+.cn-panel * {
+  box-sizing: border-box;
+}
+
+/* Extra writing room. Unconditional on purpose: the bubble must already be
+   this wide when Calendar measures and positions it — growing it later
+   (after the panel injects) makes Calendar re-layout the popup and fight
+   the panel. The cap keeps it inside small windows. */
+#xDetDlg {
+  min-width: 600px !important;
+  max-width: calc(100vw - 48px) !important;
+}
+
+/* Persist failure notice (extension updated underneath the tab, etc.). */
+.cn-stale {
+  margin: 0 0 10px;
+  padding: 7px 11px;
+  border: 1px solid color-mix(in srgb, #d93025 55%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, #d93025 12%, transparent);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+@keyframes cn-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cn-panel { animation: none; }
+  .cn-panel * { transition: none !important; animation: none !important; }
+}
+
+/* The spine: category color threads down the panel's left edge. */
+.cn-panel::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 14px;
+  bottom: 16px;
+  width: 3px;
+  border-radius: 3px;
+  background: var(--cn-cat);
+  transition: background 0.15s ease;
+}
+
+/* ---- header ---------------------------------------------------------- */
+
+.cn-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 9px;
+}
+
+.cn-eyebrow {
+  font-family: ui-monospace, 'SF Mono', 'Roboto Mono', Menlo, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: var(--cn-accent);
+  white-space: nowrap;
+}
+
+.cn-eyebrow::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 7px;
+  border-radius: 50%;
+  background: var(--cn-accent);
+  vertical-align: 1px;
+}
+
+.cn-count {
+  font-family: ui-monospace, 'SF Mono', 'Roboto Mono', Menlo, monospace;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--cn-dim);
+}
+
+.cn-ver {
+  appearance: none;
+  border: 0;
+  background: none;
+  padding: 0 2px;
+  margin-left: auto;
+  font-family: ui-monospace, 'SF Mono', 'Roboto Mono', Menlo, monospace;
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  color: var(--cn-dim);
+  opacity: 0.65;
+  cursor: pointer;
+}
+
+.cn-ver:hover {
+  opacity: 1;
+  text-decoration: underline dotted;
+}
+
+/* Diagnostics readout (toggled by the version tag). */
+.cn-diag {
+  margin-top: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--cn-line);
+  border-radius: 8px;
+  background: var(--cn-field);
+}
+
+.cn-diag-text {
+  margin: 0 0 7px;
+  font-family: ui-monospace, 'SF Mono', 'Roboto Mono', Menlo, monospace;
+  font-size: 10px;
+  line-height: 1.5;
+  color: var(--cn-dim);
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 140px;
+  overflow-y: auto;
+  user-select: text;
+}
+
+.cn-diag-btn {
+  appearance: none;
+  border: 1px solid var(--cn-line);
+  border-radius: 7px;
+  background: transparent;
+  padding: 3px 10px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--cn-accent);
+  cursor: pointer;
+}
+
+.cn-diag-btn:hover {
+  background: var(--cn-hover);
+}
+
+/* ---- category stamps ------------------------------------------------- */
+
+.cn-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.cn-chip {
+  appearance: none;
+  margin: 0;
+  padding: 3px 11px 4px;
+  border-radius: 999px;
+  border: 1px solid var(--c);
+  background: transparent;
+  color: var(--c);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  line-height: 1.4;
+  cursor: pointer;
+  transition: transform 0.1s ease, background 0.12s ease, color 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+/* In the light theme, deepen pale inks (banana…) so labels stay legible. */
+.cn-panel:not(.cn-dark) .cn-chip {
+  color: color-mix(in srgb, var(--c) 72%, #1f2126);
+  border-color: color-mix(in srgb, var(--c) 65%, rgba(32, 33, 36, 0.25));
+}
+
+.cn-chip:hover {
+  background: color-mix(in srgb, var(--c) 12%, transparent);
+}
+
+.cn-chip:active {
+  transform: scale(0.95);
+}
+
+.cn-chip[aria-pressed='true'] {
+  background: var(--c);
+  border-color: var(--c);
+  color: var(--ink, #fff);
+  box-shadow: 0 1px 4px color-mix(in srgb, var(--c) 45%, transparent);
+}
+
+.cn-chip:focus-visible,
+.cn-composer textarea:focus-visible,
+.cn-entry-act:focus-visible {
+  outline: 2px solid var(--cn-accent);
+  outline-offset: 1px;
+}
+
+/* ---- notes log ------------------------------------------------------- */
+
+.cn-log {
+  max-height: 172px;
+  overflow-y: auto;
+  margin: 0 0 8px;
+  padding: 0;
+  list-style: none;
+  scrollbar-width: thin;
+}
+
+.cn-entry {
+  position: relative;
+  padding: 5px 44px 6px 0;
+  border-radius: 6px;
+}
+
+.cn-entry + .cn-entry {
+  border-top: 1px solid color-mix(in srgb, var(--cn-line) 55%, transparent);
+}
+
+.cn-entry-stamp {
+  display: block;
+  font-family: ui-monospace, 'SF Mono', 'Roboto Mono', Menlo, monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  color: var(--cn-dim);
+  margin-bottom: 1px;
+}
+
+.cn-entry-text {
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--cn-strong);
+}
+
+.cn-entry.cn-new {
+  animation: cn-flash 0.7s ease-out;
+}
+
+@keyframes cn-flash {
+  from { background: color-mix(in srgb, var(--cn-accent) 14%, transparent); }
+  to   { background: transparent; }
+}
+
+.cn-entry-acts {
+  position: absolute;
+  right: 2px;
+  top: 6px;
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.cn-entry:hover .cn-entry-acts,
+.cn-entry:focus-within .cn-entry-acts {
+  opacity: 1;
+}
+
+.cn-entry-act {
+  appearance: none;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--cn-dim);
+  font-size: 11px;
+  line-height: 20px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.cn-entry-act:hover {
+  background: var(--cn-hover);
+  color: var(--cn-strong);
+}
+
+.cn-entry textarea {
+  width: 100%;
+  margin: 2px 0 0;
+  resize: none;
+}
+
+/* ---- empty state ----------------------------------------------------- */
+
+.cn-empty {
+  margin: 0 0 8px;
+  color: var(--cn-dim);
+  font-size: 12px;
+}
+
+/* ---- composer -------------------------------------------------------- */
+
+.cn-composer textarea,
+.cn-entry textarea {
+  display: block;
+  width: 100%;
+  min-height: 30px;
+  max-height: 120px;
+  padding: 7px 10px;
+  border: 1px solid var(--cn-line);
+  border-radius: 9px;
+  background: var(--cn-field);
+  color: var(--cn-strong);
+  font: inherit;
+  font-size: 12.5px;
+  line-height: 1.45;
+  resize: none;
+  overflow-y: auto;
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+
+.cn-composer textarea::placeholder,
+.cn-entry textarea::placeholder {
+  color: var(--cn-dim);
+}
+
+.cn-composer textarea:focus,
+.cn-entry textarea:focus {
+  border-color: var(--cn-accent);
+  background: transparent;
+  outline: none;
+}
+
+.cn-hint {
+  margin-top: 5px;
+  font-family: ui-monospace, 'SF Mono', 'Roboto Mono', Menlo, monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.06em;
+  color: var(--cn-dim);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.cn-composer:focus-within .cn-hint {
+  opacity: 1;
+}
+
+/* ==========================================================================
+   Grid badges — a category-colored stripe down the chip's right edge.
+   Rendered as a sibling above the chips (z-index 60) so overlapping
+   neighbor chips can't bury it; popovers and bubbles still cover it.
+   A paper-white pinhole appears once the call has notes.
+   ========================================================================== */
+
+.cn-stripe {
+  position: absolute;
+  width: 8px;
+  background: var(--c, #a79b8e);
+  box-shadow: inset 1.5px 0 0 rgba(255, 255, 255, 0.85),
+    -1px 0 3px rgba(0, 0, 0, 0.28);
+  pointer-events: none;
+  z-index: 60;
+}
+
+.cn-stripe--in {
+  right: 0;
+  top: 0;
+  bottom: 0;
+}
+
+.cn-stripe--noted::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #fff;
+}
+
+/* The tagged call's right edge is under another meeting. Keep the stripe on
+   the final visible pixels of the tagged call and put the separator against
+   the covering event. The marker never paints the neighbor's rectangle. */
+.cn-stripe--clipped {
+  box-shadow: inset -1.5px 0 0 rgba(255, 255, 255, 0.85),
+    -1px 0 3px rgba(0, 0, 0, 0.28);
+}
+
+/* A fully hidden call has no honest surface to fill. A narrow hatched rail at
+   its own left edge exposes the tag without making the covering meeting look
+   categorized. */
+.cn-stripe--hidden {
+  background: repeating-linear-gradient(
+    135deg,
+    var(--c, #a79b8e) 0 2px,
+    transparent 2px 4px
+  );
+  box-shadow: inset 0 0 0 1px var(--c, #a79b8e),
+    1px 0 3px rgba(0, 0, 0, 0.28);
+}
