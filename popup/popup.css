@@ -1,0 +1,564 @@
+/* ==========================================================================
+   Call Notes — toolbar popup.
+   Ink-and-brass ledger: deep slate surfaces, warm paper text, category
+   colors doing the loud work. Mono for stamps and counts.
+   ========================================================================== */
+
+:root {
+  --bg: #14161c;
+  --surface: #1b1e26;
+  --raised: #222633;
+  --line: #2a2e3a;
+  --text: #e9e7dd;
+  --dim: #9aa0ae;
+  --brass: #d5b87e;
+  --brass-ink: #1b1d22;
+  --mono: ui-monospace, 'SF Mono', 'Roboto Mono', Menlo, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  width: 360px;
+  max-height: 560px;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: 2px solid var(--brass);
+  outline-offset: 1px;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: 4px;
+}
+
+/* ---- header ---------------------------------------------------------- */
+
+.pp-head {
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.pp-brand {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 11px;
+}
+
+.pp-nib {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--brass);
+  align-self: center;
+}
+
+.pp-nib--big {
+  width: 12px;
+  height: 12px;
+  margin-bottom: 10px;
+}
+
+.pp-brand h1 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+}
+
+.pp-count {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--dim);
+}
+
+.pp-tabs {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+}
+
+.pp-tab {
+  padding: 4px 14px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 550;
+  color: var(--dim);
+}
+
+.pp-tab[aria-selected='true'] {
+  background: var(--raised);
+  color: var(--text);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+/* ---- views ----------------------------------------------------------- */
+
+#view-notes,
+#view-cats {
+  flex: 1;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.pp-search {
+  padding: 10px 16px 8px;
+}
+
+.pp-search input {
+  width: 100%;
+  padding: 7px 11px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 12.5px;
+}
+
+.pp-search input::placeholder {
+  color: var(--dim);
+}
+
+.pp-search input:focus {
+  border-color: var(--brass);
+  outline: none;
+}
+
+.pp-list {
+  flex: 1;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0 0 6px;
+  list-style: none;
+}
+
+/* ---- note rows ------------------------------------------------------- */
+
+.pp-row {
+  position: relative;
+  padding: 9px 16px 10px 20px;
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 55%, transparent);
+  cursor: pointer;
+}
+
+.pp-row:hover {
+  background: rgba(233, 231, 221, 0.03);
+}
+
+.pp-row::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 12px;
+  bottom: 12px;
+  width: 3px;
+  border-radius: 3px;
+  background: var(--c, transparent);
+}
+
+.pp-row-top {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.pp-row-title {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pp-row-when {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.07em;
+  color: var(--dim);
+  white-space: nowrap;
+}
+
+.pp-row-sub {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 2px;
+  min-width: 0;
+}
+
+.pp-tag {
+  flex: none;
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  padding: 1px 8px 2px;
+  border-radius: 999px;
+  background: var(--c);
+  color: var(--ink, #fff);
+}
+
+.pp-row-preview {
+  flex: 1;
+  min-width: 0;
+  color: var(--dim);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---- expanded row ---------------------------------------------------- */
+
+.pp-row.pp-open {
+  background: var(--surface);
+  cursor: default;
+}
+
+.pp-detail {
+  margin-top: 8px;
+}
+
+.pp-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 8px;
+}
+
+.pp-chip {
+  padding: 2px 10px 3px;
+  border-radius: 999px;
+  border: 1px solid var(--c);
+  color: var(--c);
+  font-size: 10.5px;
+  font-weight: 600;
+}
+
+.pp-chip:hover {
+  background: color-mix(in srgb, var(--c) 14%, transparent);
+}
+
+.pp-chip[aria-pressed='true'] {
+  background: var(--c);
+  color: var(--ink, #fff);
+}
+
+.pp-log {
+  margin: 0 0 8px;
+  padding: 0;
+  list-style: none;
+  max-height: 190px;
+  overflow-y: auto;
+}
+
+.pp-entry {
+  position: relative;
+  padding: 4px 26px 5px 0;
+}
+
+.pp-entry + .pp-entry {
+  border-top: 1px solid color-mix(in srgb, var(--line) 45%, transparent);
+}
+
+.pp-entry-stamp {
+  display: block;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  color: var(--dim);
+}
+
+.pp-entry-text {
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 12.5px;
+}
+
+.pp-entry-del {
+  position: absolute;
+  right: 0;
+  top: 4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  color: var(--dim);
+  font-size: 11px;
+  line-height: 20px;
+  text-align: center;
+  opacity: 0;
+}
+
+.pp-entry:hover .pp-entry-del,
+.pp-entry-del:focus-visible {
+  opacity: 1;
+}
+
+.pp-entry-del:hover {
+  background: var(--raised);
+  color: var(--text);
+}
+
+.pp-quick {
+  width: 100%;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  resize: none;
+}
+
+.pp-quick:focus {
+  border-color: var(--brass);
+  outline: none;
+}
+
+.pp-row-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+/* ---- buttons --------------------------------------------------------- */
+
+.pp-btn {
+  padding: 4px 12px 5px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 11.5px;
+  font-weight: 550;
+}
+
+.pp-btn:hover {
+  background: var(--raised);
+}
+
+.pp-btn--brass {
+  background: var(--brass);
+  border-color: var(--brass);
+  color: var(--brass-ink);
+  font-weight: 650;
+}
+
+.pp-btn--brass:hover {
+  background: #e2c88f;
+}
+
+.pp-btn--danger:hover {
+  border-color: #d93025;
+  color: #f28b82;
+  background: var(--surface);
+}
+
+/* ---- empty state ----------------------------------------------------- */
+
+.pp-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 28px 36px;
+}
+
+.pp-empty p {
+  margin: 0 0 14px;
+  color: var(--dim);
+  font-size: 12.5px;
+}
+
+/* ---- categories view ------------------------------------------------- */
+
+.pp-cats-hint {
+  margin: 10px 16px 4px;
+  color: var(--dim);
+  font-size: 11.5px;
+}
+
+.pp-cat {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 55%, transparent);
+}
+
+.pp-swatch {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--c, var(--brass));
+  border: 0;
+  cursor: pointer;
+  box-shadow: 0 0 0 1.5px rgba(233, 231, 221, 0.25);
+}
+
+.pp-cat-name {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  padding: 4px 8px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 550;
+}
+
+.pp-cat-name:hover {
+  border-color: var(--line);
+}
+
+.pp-cat-name:focus {
+  border-color: var(--brass);
+  background: var(--bg);
+  outline: none;
+}
+
+.pp-cat-uses {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.06em;
+  color: var(--dim);
+  white-space: nowrap;
+}
+
+.pp-cat-del {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  color: var(--dim);
+  font-size: 12px;
+}
+
+.pp-cat-del:hover {
+  background: var(--raised);
+  color: #f28b82;
+}
+
+.pp-palette {
+  display: none;
+  flex-wrap: wrap;
+  gap: 7px;
+  padding: 8px 16px 4px 42px;
+}
+
+.pp-palette.pp-show {
+  display: flex;
+}
+
+.pp-palette .pp-swatch[aria-checked='true'] {
+  box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--brass);
+}
+
+/* ---- add category ---------------------------------------------------- */
+
+.pp-add {
+  border-top: 1px solid var(--line);
+  padding: 10px 0 12px;
+}
+
+.pp-add-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px;
+}
+
+.pp-add-row input {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 12.5px;
+}
+
+.pp-add-row input:focus {
+  border-color: var(--brass);
+  outline: none;
+}
+
+.pp-add .pp-palette {
+  display: flex;
+}
+
+/* ---- footer ---------------------------------------------------------- */
+
+.pp-foot {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 16px;
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.pp-local {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  color: var(--dim);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .pp-row,
+  .pp-btn,
+  .pp-chip,
+  .pp-tab {
+    transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+  }
+}

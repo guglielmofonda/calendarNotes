@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Call Notes — mock Google Calendar</title>
+  <link rel="stylesheet" href="../content/content.css">
+  <style>
+    /* A minimal stand-in for the Google Calendar week grid + event bubble,
+       reproducing only the DOM hooks the content script relies on:
+       [data-eventid][role=button] chips and a #xDetDlg dialog with #rAECCd. */
+    body {
+      margin: 0;
+      font-family: Roboto, -apple-system, sans-serif;
+      background: #1b1b1f;
+      color: #e8eaed;
+      min-height: 100vh;
+    }
+    body.light { background: #fff; color: #3c4043; }
+    .grid {
+      position: relative;
+      height: 640px;
+      margin: 24px;
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 8px;
+      background:
+        linear-gradient(to right, rgba(255,255,255,.06) 1px, transparent 1px) 0 0/160px 100%,
+        linear-gradient(to bottom, rgba(255,255,255,.05) 1px, transparent 1px) 0 0/100% 60px;
+    }
+    body.light .grid {
+      border-color: rgba(0,0,0,.12);
+      background:
+        linear-gradient(to right, rgba(0,0,0,.08) 1px, transparent 1px) 0 0/160px 100%,
+        linear-gradient(to bottom, rgba(0,0,0,.06) 1px, transparent 1px) 0 0/100% 60px;
+    }
+    .chip {
+      position: absolute;
+      width: 148px;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      line-height: 1.35;
+      color: #fff;
+      cursor: pointer;
+      overflow: hidden;
+    }
+    .chip small { display: block; opacity: .85; font-size: 11px; }
+    #xDetDlg {
+      position: fixed;
+      top: 90px;
+      left: 560px;
+      width: 448px;
+      border-radius: 12px;
+      background: #2a2b2f;
+      color: #e8eaed;
+      box-shadow: 0 8px 28px rgba(0,0,0,.55);
+      z-index: 100;
+    }
+    body.light #xDetDlg {
+      background: #fff;
+      color: #3c4043;
+      box-shadow: 0 8px 28px rgba(0,0,0,.28);
+    }
+    .dlg-head {
+      display: flex;
+      justify-content: flex-end;
+      padding: 10px 12px 0;
+    }
+    .dlg-close {
+      border: 0; background: none; color: inherit; opacity: .7;
+      font-size: 15px; cursor: pointer; padding: 4px 8px;
+    }
+    .dlg-body { padding: 2px 22px 18px; }
+    .dlg-swatch {
+      display: inline-block; width: 14px; height: 14px;
+      border-radius: 4px; margin-right: 12px;
+    }
+    #rAECCd { font-size: 20px; font-weight: 400; }
+    .dlg-when { margin: 4px 0 14px 26px; font-size: 13px; opacity: .75; }
+    .dlg-row { margin: 8px 0 8px 26px; font-size: 13px; opacity: .85; }
+  </style>
+</head>
+<body>
+  <div class="grid" id="grid"></div>
+
+  <script src="../common/store.js"></script>
+  <script>
+    // --- mock data ---------------------------------------------------
+    // Names, companies and notes below are entirely fictional — used to
+    // show the extension in demos and screenshots.
+    function eid(raw) {
+      return btoa(raw + ' demo@example.com')
+        .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    }
+    var EVENTS = [
+      { id: '5oj0s2n9q4p5r8s1t', title: 'Team offsite planning', when: 'Wednesday, August 5 · 2:00 – 3:30pm', color: '#616161', x: 12, y: 60, h: 84 },
+      { id: '2ab9c8d7e6f5a4b3c_20260805T170000Z', title: 'Priya <> Sam', when: 'Wednesday, August 5 · 9:30 – 10:00am', color: '#7cb342', x: 172, y: 140, h: 56 },
+      { id: '9zz8y7x6w5v4u3t2s', title: 'Coffee w/ Ana García', when: 'Wednesday, August 5 · 3:30 – 4:00pm', color: '#e67c73', x: 332, y: 240, h: 48 },
+      { id: '4mm3n2b1v0c9x8z7a_20260812T203000Z', title: 'Founder check-in — Kestrel Labs', when: 'Wednesday, August 12 · 5:30 – 6:00pm', color: '#33b679', x: 492, y: 340, h: 48 },
+      // Overlap pair: the neighbor sits above the tagged chip's right edge.
+      // The category stripe must stay inside the tagged chip, never expand
+      // across the neighbor and make it look categorized.
+      { id: '7ju8i9o0p1q2w3e4r', title: 'SFP interview — Devon', when: 'Wednesday, August 5 · 4:00 – 5:30pm', color: '#9e9e9e', x: 12, y: 420, h: 64 },
+      { id: '8as5d6f7g8h9j0k1l', title: 'Intern chat — 3:30pm', when: 'Wednesday, August 5 · 3:30 – 4:00pm', color: '#e05d33', x: 96, y: 434, h: 40, z: 3 },
+      // Buried pair: a small tagged call fully hidden under a wider block.
+      // It gets a narrow hatched rail at its own footprint; the covering
+      // block must retain its original color. The covering chip sits in its
+      // own positioned wrapper, like real Calendar.
+      { id: '3vv2c1x0z9a8s7d6f', title: 'Intern chat — Rowan', when: 'Wednesday, August 5 · 1:00 – 1:30pm', color: '#e67c73', x: 660, y: 96, h: 40, w: 110 },
+      { id: '6qq5w4e3r2t1y0u9i', title: 'SFP interviews', when: 'Wednesday, August 5 · 12:30 – 2:30pm', color: '#9e9e9e', x: 652, y: 60, h: 120, z: 2, wrap: true },
+      // Right-edge cover: this mirrors the live Calendar geometry. The
+      // tagged Quick sync is 64px wide; the higher SFP block begins 38px
+      // inside it, covering only 41% of the call but all of its 8px stripe.
+      // The marker must sit immediately *before* the SFP block, within the
+      // tagged call's last visible pixels, rather than color the grey block.
+      { id: '2fb1r0a9c8h7i6p5o', title: 'Quick sync', when: 'Wednesday, August 5 · 3:00 – 3:30pm', color: '#8a8f98', x: 652, y: 300, h: 34, w: 64, z: 1 },
+      { id: '8bk7l6o5c4k3b2i1g', title: 'SFP interviews', when: 'Wednesday, August 5 · 2:00 – 3:30pm', color: '#9e9e9e', x: 690, y: 250, h: 130, w: 64, z: 2, wrap: true }
+    ];
+
+    if (location.search.indexOf('light') !== -1) document.body.classList.add('light');
+
+    var grid = document.getElementById('grid');
+    EVENTS.forEach(function (ev) {
+      var c = document.createElement('div');
+      c.className = 'chip';
+      c.setAttribute('role', 'button');
+      c.setAttribute('data-eventid', eid(ev.id));
+      c.setAttribute('data-eventchip', '');
+      c.style.left = ev.x + 'px';
+      c.style.top = ev.y + 'px';
+      c.style.height = ev.h + 'px';
+      c.style.background = ev.color;
+      if (ev.w) c.style.width = ev.w + 'px';
+      if (ev.z) c.style.zIndex = ev.z;
+      c.innerHTML = '<small></small>';
+      c.firstChild.textContent = ev.when.split('·')[1] || '';
+      c.insertBefore(document.createTextNode(ev.title), c.firstChild);
+      c.addEventListener('click', function () { openDialog(ev, c); });
+      if (ev.wrap) {
+        var wrap = document.createElement('div');
+        wrap.style.cssText =
+          'position:absolute;left:' + ev.x + 'px;top:' + ev.y + 'px;' +
+          (ev.z ? 'z-index:' + ev.z + ';' : '');
+        c.style.left = '0px';
+        c.style.top = '0px';
+        c.style.zIndex = '';
+        wrap.appendChild(c);
+        grid.appendChild(wrap);
+      } else {
+        grid.appendChild(c);
+      }
+    });
+
+    var selectedChip = null;
+
+    function openDialog(ev, chipEl) {
+      closeDialog();
+      // Like live Calendar: selecting a chip raises it above its neighbors.
+      if (chipEl) {
+        chipEl.dataset.prevZ = chipEl.style.zIndex || '';
+        chipEl.style.zIndex = 1000;
+        selectedChip = chipEl;
+      }
+      // Live Calendar wraps the bubble in an outer role=dialog overlay that
+      // also resolves the eventid — reproduce it to guard the dedupe logic.
+      var wrap = document.createElement('div');
+      wrap.id = 'mockDlgWrap';
+      wrap.setAttribute('role', 'dialog');
+      wrap.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:100;';
+      var d = document.createElement('div');
+      d.id = 'xDetDlg';
+      d.setAttribute('role', 'dialog');
+      d.setAttribute('data-eventid', eid(ev.id));
+      d.style.pointerEvents = 'auto';
+      var head = document.createElement('div');
+      head.className = 'dlg-head';
+      var x = document.createElement('button');
+      x.className = 'dlg-close';
+      x.textContent = '✕';
+      x.addEventListener('click', closeDialog);
+      head.appendChild(x);
+      d.appendChild(head);
+      var body = document.createElement('div');
+      body.className = 'dlg-body';
+      var sw = document.createElement('span');
+      sw.className = 'dlg-swatch';
+      sw.style.background = ev.color;
+      body.appendChild(sw);
+      var title = document.createElement('span');
+      title.id = 'rAECCd';
+      title.textContent = ev.title;
+      body.appendChild(title);
+      var when = document.createElement('div');
+      when.className = 'dlg-when';
+      when.textContent = ev.when;
+      body.appendChild(when);
+      var row = document.createElement('div');
+      row.className = 'dlg-row';
+      row.textContent = '2 guests · 1 yes, 1 awaiting';
+      body.appendChild(row);
+      d.appendChild(body);
+      wrap.appendChild(d);
+      document.body.appendChild(wrap);
+    }
+
+    function closeDialog() {
+      var d = document.getElementById('mockDlgWrap');
+      if (d) d.remove();
+      if (selectedChip) {
+        selectedChip.style.zIndex = selectedChip.dataset.prevZ;
+        selectedChip = null;
+      }
+    }
+
+    // Self-seed demo tags/notes on first run so the page demonstrates
+    // itself and the popup shows a realistic-looking log. All fictional.
+    CNStore.load().then(function (st) {
+      if (Object.keys(st.events).length) return;
+      var k = function (e) { return CNStore.decodeEid(e).key; };
+
+      var ana = eid('9zz8y7x6w5v4u3t2s');
+      var devon = eid('7ju8i9o0p1q2w3e4r');
+      var priya = eid('2ab9c8d7e6f5a4b3c_20260805T170000Z');
+      var kestrel = eid('4mm3n2b1v0c9x8z7a_20260812T203000Z');
+      var offsite = eid('5oj0s2n9q4p5r8s1t');
+      var rowan = eid('3vv2c1x0z9a8s7d6f');
+      var quick = eid('2fb1r0a9c8h7i6p5o');
+
+      // Chain the seed so entries land in a predictable order and the
+      // popup screenshots are stable across runs.
+      Promise.resolve()
+        // Ana — Intern, with a two-note log for the expanded-call screenshot.
+        .then(function () {
+          return CNStore.setCategory(k(ana), 'intern', { title: 'Coffee w/ Ana García', eid: ana });
+        })
+        .then(function () {
+          return CNStore.addEntry(k(ana), 'Wants to lead the analytics rewrite next quarter. Pair with a mentor.', { title: 'Coffee w/ Ana García', eid: ana });
+        })
+        .then(function () {
+          return CNStore.addEntry(k(ana), 'Follow-up: shipped the retention view — demo at Friday retro.', { title: 'Coffee w/ Ana García', eid: ana });
+        })
+        // Priya — Co (raising) — one note.
+        .then(function () {
+          return CNStore.setCategory(k(priya), 'cos', { title: 'Priya <> Sam', eid: priya });
+        })
+        .then(function () {
+          return CNStore.addEntry(k(priya), 'Raising a $2M seed in October. Asked for intros to design partners.', { title: 'Priya <> Sam', eid: priya });
+        })
+        // Kestrel Labs founder check-in — SFP — one note.
+        .then(function () {
+          return CNStore.setCategory(k(kestrel), 'sfp', { title: 'Founder check-in — Kestrel Labs', eid: kestrel });
+        })
+        .then(function () {
+          return CNStore.addEntry(k(kestrel), 'Agreed: cap intake at 6/day next cohort. Draft the plan by Friday.', { title: 'Founder check-in — Kestrel Labs', eid: kestrel });
+        })
+        // Team offsite — SFP — one note (bringing the popup to 5 notes / 4 calls).
+        .then(function () {
+          return CNStore.setCategory(k(offsite), 'sfp', { title: 'Team offsite planning', eid: offsite });
+        })
+        .then(function () {
+          return CNStore.addEntry(k(offsite), 'Wants intro to the product team — send by Friday.', { title: 'Team offsite planning', eid: offsite });
+        })
+        // Devon SFP interview — tagged only (no notes), to show category on the grid.
+        .then(function () {
+          return CNStore.setCategory(k(devon), 'sfp', { title: 'SFP interview — Devon', eid: devon });
+        })
+        // Grid-only demos of the hidden/overlapped rails.
+        .then(function () {
+          return CNStore.setCategory(k(rowan), 'intern', { title: 'Intern chat — Rowan', eid: rowan });
+        })
+        .then(function () {
+          return CNStore.addEntry(k(rowan), 'Ask about the referral pipeline numbers.', { title: 'Intern chat — Rowan', eid: rowan });
+        })
+        .then(function () {
+          return CNStore.setCategory(k(quick), 'intern', { title: 'Quick sync', eid: quick });
+        });
+    });
+  </script>
+  <script src="../content/content.js"></script>
+</body>
+</html>

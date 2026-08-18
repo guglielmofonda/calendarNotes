@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="color-scheme" content="dark">
+  <title>Call Notes</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header class="pp-head">
+    <div class="pp-brand">
+      <span class="pp-nib" aria-hidden="true"></span>
+      <h1>Call Notes</h1>
+      <span class="pp-count" id="count"></span>
+    </div>
+    <nav class="pp-tabs" role="tablist" aria-label="Views">
+      <button type="button" class="pp-tab" id="tab-notes" role="tab" aria-selected="true">Notes</button>
+      <button type="button" class="pp-tab" id="tab-cats" role="tab" aria-selected="false">Categories</button>
+    </nav>
+  </header>
+
+  <section id="view-notes" role="tabpanel" aria-label="Notes">
+    <div class="pp-search">
+      <input type="search" id="search" placeholder="Search calls and notes…" aria-label="Search calls and notes">
+    </div>
+    <ul class="pp-list" id="list"></ul>
+    <div class="pp-empty" id="empty" hidden>
+      <span class="pp-nib pp-nib--big" aria-hidden="true"></span>
+      <p id="empty-text">Click any event in Google Calendar to tag the call and start its running log. It all shows up here.</p>
+      <button type="button" class="pp-btn pp-btn--brass" id="open-gcal">Open Google Calendar</button>
+    </div>
+  </section>
+
+  <section id="view-cats" role="tabpanel" aria-label="Categories" hidden>
+    <p class="pp-cats-hint">Categories are the stamps you tag calls with. The color follows the call onto the calendar grid.</p>
+    <ul class="pp-list" id="cats"></ul>
+    <form class="pp-add" id="add-cat">
+      <div class="pp-add-row">
+        <span class="pp-swatch" id="add-swatch" aria-hidden="true"></span>
+        <input type="text" id="add-name" placeholder="New category…" aria-label="New category name" maxlength="40">
+        <button type="submit" class="pp-btn pp-btn--brass">Add</button>
+      </div>
+      <div class="pp-palette" id="add-palette" role="radiogroup" aria-label="Category color"></div>
+    </form>
+  </section>
+
+  <footer class="pp-foot">
+    <button type="button" class="pp-btn" id="export">Export</button>
+    <button type="button" class="pp-btn" id="import">Import</button>
+    <input type="file" id="import-file" accept="application/json,.json" hidden>
+    <span class="pp-local" id="status">STORED LOCALLY</span>
+  </footer>
+
+  <script src="../common/store.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
